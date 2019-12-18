@@ -34,24 +34,24 @@ def rec_msg(tcp_socket, port_num, q12, q13):
                         raise Exception("Port number error!")
 
 
-def send_msg(tcp_socket, port_num, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2):
+def send_msg(tcp_socket, port_num, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue):
     while True:
         if port_num == server_port1 and flag_send_3_to_1.value:
-            c_data = str(data_3_to_1.value)+'x'
+            c_data = str(data_3_to_1_queue.get())+'x'
             tcp_socket.send(c_data.encode("gb2312"))
-            # print("send_data =", data_3_to_1.value, "port_num =", port_num)
+            # print("send_data =", data_3_to_1_queue.value, "port_num =", port_num)
             flag_send_3_to_1.value = 0
         elif port_num == server_port2 and flag_send_3_to_2.value:
-            c_data = str(data_3_to_2.value)+'x'
+            c_data = str(data_3_to_2_queue.get())+'x'
             tcp_socket.send(c_data.encode("gb2312"))
-            # print("send_data =", data_3_to_2.value, "port_num =", port_num)
+            # print("send_data =", data_3_to_2_queue.value, "port_num =", port_num)
             flag_send_3_to_2.value = 0
         else:
             pass
     # tcp_socket.close()
 
 
-def client1(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2, q31, q32, connect_flag_31):
+def client1(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue, q31, q32, connect_flag_31):
     host = socket.gethostname()
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -61,7 +61,7 @@ def client1(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2, q31, q
     connect_flag_31.value = 1
     print("Connect to P1")
 
-    t_send = Thread(target=send_msg, args=(client_socket, server_port1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2))
+    t_send = Thread(target=send_msg, args=(client_socket, server_port1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue))
     t_rec = Thread(target=rec_msg, args=(client_socket, server_port1, q31, q32))
 
     t_send.start()
@@ -71,7 +71,7 @@ def client1(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2, q31, q
     t_rec.join()
 
 
-def client2(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2, q31, q32, connect_flag_32):
+def client2(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue, q31, q32, connect_flag_32):
     host = socket.gethostname()
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -82,7 +82,7 @@ def client2(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2, q31, q
     connect_flag_32.value = 1
     print("Connect to P2")
 
-    t_send = Thread(target=send_msg, args=(client_socket, server_port2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2))
+    t_send = Thread(target=send_msg, args=(client_socket, server_port2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue))
     t_rec = Thread(target=rec_msg, args=(client_socket, server_port2, q31, q32))
 
     t_send.start()
@@ -94,7 +94,7 @@ def client2(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2, q31, q
 
 class DPaillier:
     def __init__(self, party_index):
-        self.KeyLength = mpz(8)
+        self.KeyLength = mpz(1024)
         self.PartyIndex = party_index
         self.PartyNumber = 3
         self.PP = 0
@@ -193,19 +193,19 @@ class DPaillier:
 
         return [[pi1, ppi1, qi1, qqi1, hi1, hhi1], [pi2, ppi2, qi2, qqi2, hi2, hhi2], [pi3, ppi3, qi3, qqi3, hi3, hhi3]]
 
-    def send_pq_tuple(self, pq_tuple, send_party_index, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2):
+    def send_pq_tuple(self, pq_tuple, send_party_index, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue):
         for ctuple in pq_tuple:
             # print("ctuple = ", ctuple, "send_party_index = ", send_party_index)
-            self.send_data(ctuple, send_party_index, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
+            self.send_data(ctuple, send_party_index, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
 
-    def send_data(self, data, party_send_index, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2):
+    def send_data(self, data, party_send_index, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue):
         while True:
             if party_send_index == 1 and flag_send_3_to_1.value == 0:
-                data_3_to_1.value = data
+                data_3_to_1_queue.put(data)
                 flag_send_3_to_1.value = 1
                 break
             elif party_send_index == 2 and flag_send_3_to_2.value == 0:
-                data_3_to_2.value = data
+                data_3_to_2_queue.put(data)
                 flag_send_3_to_2.value = 1
                 break
             else:
@@ -261,11 +261,11 @@ class DPaillier:
             break
         return [q31_list[0], q32_list[0], self_Ni]
 
-    def send_pq_tuple_list(self, pq_tuple_list, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2):
-        self.send_pq_tuple(pq_tuple_list[0], 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
-        self.send_data(33331111, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
-        self.send_pq_tuple(pq_tuple_list[1], 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
-        self.send_data(33332222, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
+    def send_pq_tuple_list(self, pq_tuple_list, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue):
+        self.send_pq_tuple(pq_tuple_list[0], 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+        self.send_data(33331111, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+        self.send_pq_tuple(pq_tuple_list[1], 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+        self.send_data(33332222, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
         while True:
             if flag_send_3_to_2.value == 0:
                 break
@@ -285,7 +285,7 @@ class DPaillier:
             0]) * (received_pq_tuple_list[0][2] + received_pq_tuple_list[1][2] + received_pq_tuple_list[2][2]) + (
                                      received_pq_tuple_list[0][4] + received_pq_tuple_list[1][4] +
                                      received_pq_tuple_list[2][4])), self.PP)
-        print("Ni = ", Ni)
+        # print("Ni = ", Ni)
         return Ni
 
     def compute_N(self, Ni_list):
@@ -293,14 +293,14 @@ class DPaillier:
         L2 = mpz(int((0 - 1) * (0 - 3) / ((2 - 1) * (2 - 3))))
         L3 = mpz(int((0 - 1) * (0 - 2) / ((3 - 1) * (3 - 2))))
         self.N = gmpy2.f_mod(gmpy2.mul(Ni_list[0], L1) + gmpy2.mul(Ni_list[1], L2) + gmpy2.mul(Ni_list[2], L3), self.PP)
-        print("Ni_list = ", Ni_list)
+        # print("Ni_list = ", Ni_list)
         print("Candidate modulus = ", self.N)
 
-    def send_Ni(self, Ni, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2):
-        self.send_data(Ni, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
-        self.send_data(33331111, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
-        self.send_data(Ni, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
-        self.send_data(33332222, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
+    def send_Ni(self, Ni, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue):
+        self.send_data(Ni, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+        self.send_data(33331111, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+        self.send_data(Ni, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+        self.send_data(33332222, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
         while True:
             if flag_send_3_to_2.value == 0:
                 break
@@ -345,14 +345,14 @@ class DPaillier:
                     break
         return [q31_list[0], q32_list[0], self.Q]
 
-    def biprimality_check(self, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2, q31, q32):
+    def biprimality_check(self, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue, q31, q32):
         self.receive_gg(q31)
         self.Q = gmpy2.powmod(self.gg, gmpy2.f_div(self.pi + self.qi, 4), self.N)
 
-        self.send_data(self.Q, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
-        self.send_data(33331111, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
-        self.send_data(self.Q, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
-        self.send_data(33332222, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
+        self.send_data(self.Q, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+        self.send_data(33331111, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+        self.send_data(self.Q, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+        self.send_data(33332222, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
         while True:
             if flag_send_3_to_2.value == 0:
                 break
@@ -372,20 +372,20 @@ class DPaillier:
 
     def start_sync(self, q31, q32):
         if self.PartyIndex == 1:
-            self.send_data(99999999, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
-            self.send_data(11112222, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
-            self.send_data(99999999, 3, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
-            self.send_data(11113333, 3, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
+            self.send_data(99999999, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+            self.send_data(11112222, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+            self.send_data(99999999, 3, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+            self.send_data(11113333, 3, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
         elif self.PartyIndex == 2:
-            self.send_data(99999999, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
-            self.send_data(22221111, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
-            self.send_data(99999999, 3, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
-            self.send_data(22223333, 3, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
+            self.send_data(99999999, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+            self.send_data(22221111, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+            self.send_data(99999999, 3, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+            self.send_data(22223333, 3, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
         elif self.PartyIndex == 3:
-            self.send_data(99999999, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
-            self.send_data(33331111, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
-            self.send_data(99999999, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
-            self.send_data(33332222, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
+            self.send_data(99999999, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+            self.send_data(33331111, 1, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+            self.send_data(99999999, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
+            self.send_data(33332222, 2, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
         else:
             raise Exception("PartyIndex Error!")
 
@@ -411,7 +411,7 @@ class DPaillier:
             if q31_list[0] == 99999999 and q32_list[0] == 99999999:
                 return True
 
-    def distributed_RSA_modulus_generation(self, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2, q31, q32):
+    def distributed_RSA_modulus_generation(self, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue, q31, q32):
         while True:
             # print("Distributed RSA modulus generation start")
             self.pi = self.pick_pq()
@@ -420,7 +420,7 @@ class DPaillier:
             pq_tuple_list = self.compute_tuple()
             # print("send_pq_tuple_list = ", pq_tuple_list)
             # print("compute pq tuple done")
-            self.send_pq_tuple_list(pq_tuple_list, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
+            self.send_pq_tuple_list(pq_tuple_list, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
             # print("send pq tuple list done")
             received_pq_tuple_list = self.receive_pq_tuple_list(pq_tuple_list, q31, q32)
             # print("received_pq_tuple_list", received_pq_tuple_list)
@@ -428,7 +428,7 @@ class DPaillier:
             self.share_verification(received_pq_tuple_list)
             Ni = self.compute_Ni(received_pq_tuple_list)
             # print("compute Ni done")
-            self.send_Ni(Ni, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2)
+            self.send_Ni(Ni, flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue)
             # print("send Ni done")
             Ni_list = self.receive_Ni_list(Ni, q31, q32)
             # print("receive Ni list done")
@@ -436,7 +436,7 @@ class DPaillier:
             self.N_verification(Ni_list)
             self.compute_N(Ni_list)
             # print("compute N done")
-            if self.biprimality_check(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2, q31, q32):
+            if self.biprimality_check(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue, q31, q32):
                 break
             # print("biprimality check done")
             # self.start_sync(q31, q32)
@@ -445,15 +445,15 @@ class DPaillier:
 if __name__ == "__main__":
     flag_send_3_to_1 = multiprocessing.Value('l', 0)
     flag_send_3_to_2 = multiprocessing.Value('l', 0)
-    data_3_to_1 = multiprocessing.Value('l', 0)
-    data_3_to_2 = multiprocessing.Value('l', 0)
+    data_3_to_1_queue = multiprocessing.Queue()
+    data_3_to_2_queue = multiprocessing.Queue()
     q31 = multiprocessing.Queue()
     q32 = multiprocessing.Queue()
     connect_flag_31 = multiprocessing.Value('h', 0)
     connect_flag_32 = multiprocessing.Value('h', 0)
 
-    client1_process = Process(target=client1, args=(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2, q31, q32, connect_flag_31))
-    client2_process = Process(target=client2, args=(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2, q31, q32, connect_flag_32))
+    client1_process = Process(target=client1, args=(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue, q31, q32, connect_flag_31))
+    client2_process = Process(target=client2, args=(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue, q31, q32, connect_flag_32))
 
     client1_process.start()
     client2_process.start()
@@ -465,7 +465,7 @@ if __name__ == "__main__":
 
     # distributed Paillier key generation
     d_paillier = DPaillier(3)
-    d_paillier.distributed_RSA_modulus_generation(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1, data_3_to_2, q31, q32)
+    d_paillier.distributed_RSA_modulus_generation(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue, q31, q32)
     print("RSA modulus generation success")
     print("modulus = ", d_paillier.N)
 
