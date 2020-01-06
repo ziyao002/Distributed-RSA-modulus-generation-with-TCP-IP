@@ -94,7 +94,7 @@ def client2(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_q
 
 class DPaillier:
     def __init__(self, party_index):
-        self.KeyLength = mpz(1024)
+        self.KeyLength = mpz(128)
         self.PartyIndex = party_index
         self.PartyNumber = 3
         self.PP = 0
@@ -464,10 +464,13 @@ if __name__ == "__main__":
             break
 
     # distributed Paillier key generation
+    start = time.time()
     d_paillier = DPaillier(3)
     d_paillier.distributed_RSA_modulus_generation(flag_send_3_to_1, flag_send_3_to_2, data_3_to_1_queue, data_3_to_2_queue, q31, q32)
+    stop = time.time()
     print("RSA modulus generation success")
     print("modulus = ", d_paillier.N)
+    print("duration = ", stop - start, "seconds")
 
 
 
